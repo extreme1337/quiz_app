@@ -1,23 +1,17 @@
-from questions.models import Answer
-from questions.models import Question
-from typing import List
-from django.http.response import JsonResponse
 from django.shortcuts import render
 from .models import Quiz
 from django.views.generic import ListView
+from django.http import JsonResponse
+from questions.models import Question, Answer
 from results.models import Result
 
-# Create your views here.
 class QuizListView(ListView):
-    model = Quiz
+    model = Quiz 
     template_name = 'quizes/main.html'
-
-
 
 def quiz_view(request, pk):
     quiz = Quiz.objects.get(pk=pk)
     return render(request, 'quizes/quiz.html', {'obj': quiz})
-
 
 def quiz_data_view(request, pk):
     quiz = Quiz.objects.get(pk=pk)
@@ -32,13 +26,12 @@ def quiz_data_view(request, pk):
         'time': quiz.time,
     })
 
-
 def save_quiz_view(request, pk):
-    print(request.POST)
     if request.is_ajax():
         questions = []
         data = request.POST
         data_ = dict(data.lists())
+
         data_.pop('csrfmiddlewaretoken')
 
         for k in data_.keys():
@@ -69,14 +62,14 @@ def save_quiz_view(request, pk):
                         if a.correct:
                             correct_answer = a.text
 
-                    results.append({str(q): {'correnct_answer': correct_answer, 'answered': a_selected}})
+                results.append({str(q): {'correct_answer': correct_answer, 'answered': a_selected}})
             else:
                 results.append({str(q): 'not answered'})
-        
+            
         score_ = score * multiplier
-        Result.objects.create(quiz=quiz, user=request.user, score=score_)
+        Result.objects.create(quiz=quiz, user=user, score=score_)
 
         if score_ >= quiz.required_score_to_pas:
             return JsonResponse({'passed': True, 'score': score_, 'results': results})
         else:
-            return JsonResponse({'passwed': False, 'score': score_, 'results': results})
+            return JsonResponse({'passed': False, 'score': score_, 'results': results})
